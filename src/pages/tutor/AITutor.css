@@ -1,0 +1,16 @@
+.ai-tutor-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.ai-tutor-container h1 {
+  color: #333;
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.ai-tutor-container p {
+  color: #666;
+  font-size: 1rem;
+}

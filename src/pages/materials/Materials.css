@@ -1,0 +1,16 @@
+.materials-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.materials-container h1 {
+  color: #333;
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.materials-container p {
+  color: #666;
+  font-size: 1rem;
+}

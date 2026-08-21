@@ -1,0 +1,52 @@
+.quiz-container {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+  padding: 3rem;
+}
+.options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+.option-btn {
+  padding: 1.5rem;
+  font-size: 1.125rem;
+  text-align: left;
+}
+.score-circle {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  border: 8px solid var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  font-weight: bold;
+  margin: 2rem auto;
+}
+.adaptive-learning-analysis {
+  text-align: left;
+  background: var(--bg-color);
+  padding: 2rem;
+  border-radius: var(--radius);
+  margin-top: 2rem;
+}
+.analysis-list {
+  list-style: none;
+  margin: 1rem 0 2rem 0;
+}
+.analysis-list li {
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  border-radius: var(--radius);
+}
+.strength { background-color: #dcfce7; color: #166534; }
+.weakness { background-color: #fee2e2; color: #991b1b; }
+.recommendations {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
