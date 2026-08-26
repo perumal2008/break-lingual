@@ -1,14 +1,15 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
+import ProtectedRoute from '../components/common/ProtectedRoute';
 import Home from '../pages/Home';
+import Login from '../pages/auth/Login';
+import Register from '../pages/auth/Register';
+import Dashboard from '../pages/student/Dashboard';
 import AIVideo from '../pages/video/AIVideo';
 import AITutor from '../pages/tutor/AITutor';
-// Add these two imports:
-import Dashboard from '../pages/student/Dashboard';
 import AIQuiz from '../pages/quiz/AIQuiz';
 import Materials from '../pages/materials/Materials';
-import ReadingView from '../pages/materials/ReadingView';
 
 const AppRoutes = () => {
   return (
@@ -18,13 +19,15 @@ const AppRoutes = () => {
         <main className="main-content">
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/video" element={<AIVideo />} />
-            <Route path="/tutor" element={<AITutor />} />
-            {/* Add these two routes: */}
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
             
-           
-            <Route path="/quiz" element={<AIQuiz />} />
+            {/* Protected Routes */}
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/video" element={<ProtectedRoute><AIVideo /></ProtectedRoute>} />
+            <Route path="/tutor" element={<ProtectedRoute><AITutor /></ProtectedRoute>} />
+            <Route path="/quiz" element={<ProtectedRoute><AIQuiz /></ProtectedRoute>} />
+            <Route path="/materials" element={<ProtectedRoute><Materials /></ProtectedRoute>} />
           </Routes>
         </main>
       </div>

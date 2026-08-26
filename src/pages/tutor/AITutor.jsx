@@ -1,13 +1,13 @@
 import React from 'react';
-import './AITutor.css';
+import '../materials/Materials.css';
 
 const AITutor = () => {
   return (
-    <div className="ai-tutor-container">
-      <h1>AI Tutor</h1>
-      <p>Welcome to the AI Tutor page</p>
+    <div className="page-container">
+      <h1>AI Teacher Chat</h1>
+      <p>Have natural conversations to improve your skills.</p>
+      <div className="card-placeholder">Chat Interface Placeholder</div>
     </div>
   );
 };
-
 export default AITutor;

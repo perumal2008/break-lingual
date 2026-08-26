@@ -10,7 +10,7 @@ const Navbar = () => {
       </div>
       <div className="nav-links">
         <Link to="/materials">Materials</Link>
-        <Link to="/tutor">AI Tutor</Link>
+        <Link to="/tutor">AI Teacher</Link>
         <Link to="/video">AI Video</Link>
         <button className="btn btn-outline nav-btn">Login</button>
       </div>

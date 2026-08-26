@@ -62,7 +62,7 @@ const AITutor = () => {
         
         {isTyping && (
           <div className="typing-indicator">
-            AI Tutor is typing...
+            AI Teacher is typing...
           </div>
         )}
         

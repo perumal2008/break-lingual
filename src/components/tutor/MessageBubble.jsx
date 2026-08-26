@@ -9,7 +9,7 @@ const MessageBubble = ({ message }) => {
       {isAI && (
         <img 
           src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&q=80&w=100&h=100" 
-          alt="AI Tutor Avatar" 
+          alt="AI Teacher Avatar" 
           className="avatar"
         />
       )}
