@@ -10,20 +10,24 @@ import AIVideo from '../pages/video/AIVideo';
 import AITutor from '../pages/tutor/AITutor';
 import AIQuiz from '../pages/quiz/AIQuiz';
 import Materials from '../pages/materials/Materials';
+import TranslationWorkspace from '../pages/TranslationWorkspace';
 
 const AppRoutes = () => {
   return (
     <Router>
-      <div className="app-container">
+      <div className="app-container h-screen flex flex-col">
         <Navbar />
-        <main className="main-content">
+        <main className="main-content flex-1 overflow-auto">
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            
-            {/* Protected Routes */}
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          
+          {/* MVP Route */}
+          <Route path="/workspace" element={<TranslationWorkspace />} />
+          
+          {/* Protected Routes */}
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/video" element={<ProtectedRoute><AIVideo /></ProtectedRoute>} />
             <Route path="/tutor" element={<ProtectedRoute><AITutor /></ProtectedRoute>} />
             <Route path="/quiz" element={<ProtectedRoute><AIQuiz /></ProtectedRoute>} />

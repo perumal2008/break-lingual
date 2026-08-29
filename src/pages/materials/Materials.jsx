@@ -24,20 +24,32 @@ const Materials = () => {
     }
   };
 
-  const handleTranslate = () => {
+  const handleTranslate = async () => {
     if (!file) return;
 
     setIsTranslating(true);
 
-    setTimeout(() => {
-      setIsTranslating(false);
+    try {
+      // We pass the filename as the text to simulate document scanning
+      const response = await fetch('http://localhost:5000/api/translate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          sourceText: `Content extracted from document: ${file.name}`,
+          language: 'Spanish' // default for MVP
+        })
+      });
+      
+      const data = await response.json();
       
       const newTranslation = {
         id: Date.now(),
         originalName: file.name,
         date: new Date().toLocaleDateString(),
-        summary: "This document discusses the fundamentals of web development and responsive design patterns. It highlights modern approaches.",
-        translatedText: "Ce document aborde les principes fondamentaux du développement web et des modèles de conception réactifs. Il met en évidence les approches modernes. (Simulated AI Translation)"
+        summary: data.summary,
+        translatedText: data.translatedText
       };
 
       const updatedHistory = [newTranslation, ...history];
@@ -48,7 +60,12 @@ const Materials = () => {
       
       setSelectedResult(newTranslation);
       setFile(null); 
-    }, 3000);
+    } catch (error) {
+      console.error("API error:", error);
+      alert("Failed to reach AI server. Please make sure the backend is running.");
+    } finally {
+      setIsTranslating(false);
+    }
   };
 
   const handleDelete = (id) => {

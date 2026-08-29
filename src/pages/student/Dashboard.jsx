@@ -14,8 +14,20 @@ const Dashboard = () => {
     }
   };
 
+  const getQuizAverage = () => {
+    try {
+      const scores = JSON.parse(localStorage.getItem('quizScores') || '[]');
+      if (scores.length === 0) return 0;
+      const total = scores.reduce((acc, score) => acc + score, 0);
+      return Math.round(total / scores.length);
+    } catch {
+      return 0;
+    }
+  };
+
   const [studySeconds, setStudySeconds] = useState(parseInt(localStorage.getItem('studyTime') || '0', 10));
   const [materialsCount, setMaterialsCount] = useState(getMaterialsCount());
+  const [quizAverage, setQuizAverage] = useState(getQuizAverage());
 
   useEffect(() => {
     const handleTimeUpdate = () => {
@@ -26,12 +38,18 @@ const Dashboard = () => {
       setMaterialsCount(getMaterialsCount());
     };
 
+    const handleQuizUpdate = () => {
+      setQuizAverage(getQuizAverage());
+    };
+
     window.addEventListener('studyTimeUpdated', handleTimeUpdate);
     window.addEventListener('materialsUpdated', handleMaterialsUpdate);
+    window.addEventListener('quizScoreUpdated', handleQuizUpdate);
     
     return () => {
       window.removeEventListener('studyTimeUpdated', handleTimeUpdate);
       window.removeEventListener('materialsUpdated', handleMaterialsUpdate);
+      window.removeEventListener('quizScoreUpdated', handleQuizUpdate);
     };
   }, []);
 
@@ -64,7 +82,7 @@ const Dashboard = () => {
         </div>
         <div className="stat-card">
           <h4>Average Quiz Score</h4>
-          <p className="stat-number">92%</p>
+          <p className="stat-number">{quizAverage}%</p>
         </div>
       </div>
       
