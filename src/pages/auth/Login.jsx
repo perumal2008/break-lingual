@@ -12,17 +12,21 @@ const Login = () => {
 
   const from = location.state?.from?.pathname || "/dashboard";
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (email && password) {
-      login(email);
-      navigate(from, { replace: true });
+      const success = await login('email', email, email.split('@')[0], 'local-id');
+      if (success) navigate(from, { replace: true });
     }
   };
 
-  const handleSocialLogin = (provider) => {
-    login({ email: `${provider}User@example.com`, name: 'Student' });
-    navigate(from, { replace: true });
+  const handleSocialLogin = async (provider) => {
+    // For the hackathon MVP, we pass mock OAuth data straight to the backend to create the real DB entry.
+    // This bypasses the Google Cloud Console Client ID requirement while still saving to MongoDB.
+    const mockEmail = `${provider}User${Math.floor(Math.random()*1000)}@example.com`;
+    const success = await login(provider, mockEmail, `${provider} Student`, `${provider}-123456`);
+    
+    if (success) navigate(from, { replace: true });
   };
 
   return (

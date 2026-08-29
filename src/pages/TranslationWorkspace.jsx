@@ -36,7 +36,30 @@ const TranslationWorkspace = () => {
         body: JSON.stringify({ sourceText, language })
       });
       const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || "Translation failed");
+      }
+      
       setResult(data);
+      
+      // Update the Dashboard counter
+      try {
+        const history = JSON.parse(localStorage.getItem('materialsHistory') || '[]');
+        const newRecord = {
+          id: Date.now(),
+          originalName: "Workspace Translation",
+          date: new Date().toLocaleDateString(),
+          summary: data.summary || "Workspace Analysis",
+          translatedText: data.translatedText
+        };
+        history.unshift(newRecord);
+        localStorage.setItem('materialsHistory', JSON.stringify(history));
+        window.dispatchEvent(new Event('materialsUpdated'));
+      } catch(e) {
+        console.error("Failed to update dashboard history", e);
+      }
+      
     } catch (error) {
       console.error("Translation error:", error);
       // Fallback
@@ -78,10 +101,10 @@ const TranslationWorkspace = () => {
               onChange={(e) => setLanguage(e.target.value)}
               className="border border-gray-300 rounded px-3 py-1 text-sm outline-none focus:border-blue-500"
             >
-              <option value="Spanish">Spanish</option>
-              <option value="French">French</option>
-              <option value="German">German</option>
-              <option value="Japanese">Japanese</option>
+              <option value="Tamil">Tamil</option>
+              <option value="Telugu">Telugu</option>
+              <option value="Hindi">Hindi</option>
+              <option value="English">English</option>
             </select>
           </div>
           

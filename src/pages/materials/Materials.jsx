@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import localforage from 'localforage';
 import './Materials.css';
 
 const Materials = () => {
@@ -6,6 +7,7 @@ const Materials = () => {
   const [isTranslating, setIsTranslating] = useState(false);
   const [history, setHistory] = useState([]);
   const [selectedResult, setSelectedResult] = useState(null);
+  const [language, setLanguage] = useState('Tamil');
 
   useEffect(() => {
     // Load history on mount
@@ -30,27 +32,42 @@ const Materials = () => {
     setIsTranslating(true);
 
     try {
-      // We pass the filename as the text to simulate document scanning
+      // Read file as Data URL to store in IndexedDB
+      const fileDataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = (e) => reject(e);
+        reader.readAsDataURL(file);
+      });
+
+      // Send the actual file to the backend
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('language', language);
+      formData.append('sourceText', '');
+
       const response = await fetch('http://localhost:5000/api/translate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          sourceText: `Content extracted from document: ${file.name}`,
-          language: 'Spanish' // default for MVP
-        })
+        body: formData
       });
       
       const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to translate');
+      }
+      
+      const translationId = Date.now();
       
       const newTranslation = {
-        id: Date.now(),
+        id: translationId,
         originalName: file.name,
         date: new Date().toLocaleDateString(),
         summary: data.summary,
         translatedText: data.translatedText
       };
+
+      // Save file data to IndexedDB to avoid 5MB localStorage limit
+      await localforage.setItem(`file_${translationId}`, fileDataUrl);
 
       const updatedHistory = [newTranslation, ...history];
       setHistory(updatedHistory);
@@ -83,6 +100,21 @@ const Materials = () => {
     setSelectedResult(item);
   };
 
+  const handleOpenOriginal = async () => {
+    try {
+      const fileData = await localforage.getItem(`file_${selectedResult.id}`);
+      if (fileData) {
+        const newWindow = window.open();
+        newWindow.document.write(`<iframe src="${fileData}" width="100%" height="100%" style="border:none;"></iframe>`);
+      } else {
+        alert("Original file data not found. It may have been uploaded before this feature was added.");
+      }
+    } catch (err) {
+      console.error("Failed to load file", err);
+      alert("Failed to load original file.");
+    }
+  };
+
   return (
     <div className="materials-page-container">
       <div className="materials-header">
@@ -108,8 +140,22 @@ const Materials = () => {
             </div>
 
             {file && (
-              <div className="file-info">
+              <div className="file-info" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                 <p>Selected File: <strong>{file.name}</strong></p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <label htmlFor="material-lang" style={{ fontWeight: '500', color: '#555' }}>Translate to:</label>
+                  <select 
+                    id="material-lang"
+                    value={language} 
+                    onChange={(e) => setLanguage(e.target.value)}
+                    style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #ccc', outline: 'none' }}
+                  >
+                    <option value="Tamil">Tamil</option>
+                    <option value="Telugu">Telugu</option>
+                    <option value="Hindi">Hindi</option>
+                    <option value="English">English</option>
+                  </select>
+                </div>
                 <button 
                   className="translate-btn" 
                   onClick={handleTranslate} 
@@ -147,8 +193,14 @@ const Materials = () => {
         <div className="result-column">
           {selectedResult ? (
             <div className="translation-result">
-              <div className="success-banner">
-                ✅ Viewing: <strong>{selectedResult.originalName}</strong>
+              <div className="success-banner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>✅ Viewing: <strong>{selectedResult.originalName}</strong></span>
+                <button 
+                  onClick={handleOpenOriginal}
+                  style={{ background: 'white', color: '#007bff', border: '1px solid #007bff', padding: '4px 10px', borderRadius: '4px', fontSize: '13px', cursor: 'pointer' }}
+                >
+                  📄 Open Original
+                </button>
               </div>
               
               <div className="result-card">
