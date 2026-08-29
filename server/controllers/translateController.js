@@ -300,16 +300,22 @@ exports.chatWithTeacher = async (req, res) => {
     const GROQ_API_KEY = process.env.GROQ_API_KEY;
     
     if (!GROQ_API_KEY) {
-      return res.json({ 
-        role: "assistant", 
-        content: "Hello! I am your AI Teacher. Unfortunately, the Groq API Key is missing in the backend, so I can only send this mock response right now!" 
-      });
+      return res.json(generateLocalResponse(messages, contextText));
     }
 
-    const systemPrompt = `You are a helpful, encouraging, and highly knowledgeable AI language teacher.
-Your goal is to help the student understand their materials, answer language questions, and practice conversation.
-Keep your answers relatively concise, friendly, and formatted nicely in markdown if needed.
-${contextText ? `\nCONTEXT (The student recently studied this material):\n"""\n${contextText.substring(0, 2000)}\n"""\nUse this context if they ask questions about what they just read.` : ''}
+    const systemPrompt = `You are a friendly, encouraging, and knowledgeable AI language teacher named "Lingua".
+Your goal is to help students understand their materials and practice language skills.
+
+FORMATTING RULES (follow strictly):
+- Write in clean, readable markdown that renders well in a chat UI.
+- Use **bold** only for key terms or important concepts.
+- Use bullet lists (- item) for 3+ related items. Keep lists short.
+- Use numbered lists only for step-by-step instructions.
+- Do NOT use headers (# or ##) — this is a chat, not a document.
+- Do NOT use excessive symbols, raw LaTeX, or HTML.
+- Keep responses concise — 3 to 5 sentences for simple questions, slightly more for explanations.
+- Be warm and conversational. End with a follow-up question when appropriate.
+${contextText ? `\nSTUDENT'S MATERIAL CONTEXT:\n"""\n${contextText.substring(0, 2000)}\n"""\nReference this if the student asks about what they uploaded.` : ''}
 `;
 
     // Construct messages array for Groq
@@ -325,7 +331,8 @@ ${contextText ? `\nCONTEXT (The student recently studied this material):\n"""\n$
       headers: {
         'Authorization': `Bearer ${GROQ_API_KEY}`,
         'Content-Type': 'application/json'
-      }
+      },
+      timeout: 15000
     });
 
     const reply = response.data.choices[0].message;
@@ -333,15 +340,60 @@ ${contextText ? `\nCONTEXT (The student recently studied this material):\n"""\n$
 
   } catch (error) {
     console.error('Chat error:', error.message);
-    console.log('Falling back to local fallback chat due to network error...');
+    console.log('Falling back to smart local response engine...');
     
-    // Provide a graceful fallback chat message so the UI doesn't break
-    res.json({
-      role: 'assistant',
-      content: "I'm having a little trouble connecting to my AI brain right now due to a network connection issue (DNS ENOTFOUND). But don't worry, keep practicing your materials and I'll be back online soon!"
-    });
+    // Use the smart local response engine instead of a static message
+    const { messages, contextText } = req.body;
+    res.json(generateLocalResponse(messages, contextText));
   }
 };
+
+// ─── Smart Local Response Engine (works 100% offline) ───
+function generateLocalResponse(messages, contextText) {
+  const lastMsg = (messages && messages.length > 0)
+    ? messages[messages.length - 1].content.toLowerCase()
+    : '';
+
+  // Greeting patterns
+  if (/^(hi|hello|hey|good morning|good evening|hola|namaste|vanakkam)/.test(lastMsg)) {
+    return { role: 'assistant', content: "Hello there! 👋 I'm **Lingua**, your AI language teacher. I'm currently running in **offline mode** because the network is having trouble connecting to the AI cloud.\n\nBut I can still help! Try asking me about:\n- **Vocabulary** and word meanings\n- **Grammar** tips\n- **Your uploaded materials**\n\nWhat would you like to learn today?" };
+  }
+
+  // Translation requests
+  if (/translat|how do you say|what is .* in (tamil|hindi|spanish|french|english|telugu|german)/.test(lastMsg)) {
+    return { role: 'assistant', content: "Great question! 🌍 Translation is one of my specialties. Right now I'm in **offline mode**, so I can't translate in real-time.\n\n**Here's what you can do:**\n1. Go to **Smart Materials** in the sidebar\n2. Upload a document or paste text\n3. Select your target language and hit **Translate**\n\nThe translation engine there has full AI power! Want to try something else?" };
+  }
+
+  // Grammar questions
+  if (/grammar|tense|verb|noun|adjective|conjugat|sentence structure|past tense|present tense/.test(lastMsg)) {
+    return { role: 'assistant', content: "Grammar is the backbone of any language! 📚 Here are some **universal grammar tips** that apply to most languages:\n\n- **Subject-Verb-Object (SVO)** is the most common word order in English and many other languages\n- **Verbs** change form based on tense (past, present, future) and person (I, you, he/she)\n- **Practice with short sentences** before tackling complex structures\n- **Read aloud** to build natural rhythm and catch errors\n\nWant me to help you practice with a **quiz** on this topic? Head over to the AI Quiz section!" };
+  }
+
+  // Vocabulary
+  if (/vocabul|word|meaning|define|synonym|antonym|what does .* mean/.test(lastMsg)) {
+    return { role: 'assistant', content: "Building **vocabulary** is one of the best ways to improve! 💡 Here are proven strategies:\n\n- **Flashcards** — Review new words daily using spaced repetition\n- **Context reading** — Learn words inside sentences, not in isolation\n- **Word families** — Learn \"happy, happiness, happily, unhappy\" together\n- **Use new words** — Write 3 sentences using each new word you learn\n\nTip: Upload a document in **Smart Materials** and I'll extract key vocabulary for you!" };
+  }
+
+  // Material/document context questions
+  if (contextText && /(material|document|upload|text|content|what did|summary|explain|about)/.test(lastMsg)) {
+    const snippet = contextText.substring(0, 200).replace(/\n/g, ' ');
+    return { role: 'assistant', content: `Based on your uploaded material, here's a quick overview:\n\n> "${snippet}..."\n\nThis text appears to cover important concepts. I'm in **offline mode** right now, so for a **deep analysis** try:\n- Taking an **AI Quiz** on this material\n- Using the **Smart Materials** translator for a full breakdown\n\nWould you like to explore any specific part of this document?` };
+  }
+
+  // Quiz related
+  if (/quiz|test|question|exam|practice|assess/.test(lastMsg)) {
+    return { role: 'assistant', content: "Ready to test your knowledge? 🎯 Great choice!\n\nHead over to the **AI Quiz** section in the sidebar. You can:\n- Enter a **custom topic** (like \"Spanish verbs\" or \"Photosynthesis\")\n- Generate from your **latest uploaded material**\n\nThe quiz gives you **instant feedback** with correct answers highlighted in green. Give it a try!" };
+  }
+
+  // Help/what can you do
+  if (/help|what can you|what do you|feature|how to use|guide/.test(lastMsg)) {
+    return { role: 'assistant', content: "Here's everything I can help with! 🚀\n\n- **📚 Smart Materials** — Upload PDFs/DOCX, get AI translations and summaries\n- **🤖 AI Teacher** (that's me!) — Ask questions about your materials or any language topic\n- **📝 AI Quiz** — Generate quizzes on any topic or from your documents\n- **🎥 AI Video** — Find educational YouTube videos on any topic\n- **📊 Dashboard** — Track your study time, quiz scores, and progress\n\nI'm currently in **offline mode** due to network issues, but most features still work! What would you like to try?" };
+  }
+
+  // Default catch-all — still useful
+  return { role: 'assistant', content: `That's a great question! 🤔 I'm currently running in **offline mode** because the AI cloud (Groq) is unreachable from this network.\n\nI can still guide you though! Here are some things you can try right now:\n\n- **Upload a document** in Smart Materials for instant translation\n- **Take an AI Quiz** on any topic you're studying\n- **Watch educational videos** on the AI Video page\n\nOnce the network is back, I'll be able to give you detailed, personalized answers. Keep learning! 💪` };
+}
+
 
 const youtubeSearchApi = require('youtube-search-api');
 
