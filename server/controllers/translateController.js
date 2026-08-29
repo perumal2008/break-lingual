@@ -44,6 +44,7 @@ exports.translateText = async (req, res) => {
   try {
     let sourceText = req.body.sourceText || req.body.text; 
     const language = req.body.language;
+    const userPrompt = req.body.prompt || '';
 
     if (req.file) {
       console.log(`Processing uploaded file: ${req.file.originalname}`);
@@ -64,28 +65,82 @@ exports.translateText = async (req, res) => {
       return res.status(400).json({ error: 'Missing sourceText, file, or language' });
     }
 
-    console.log(`Translating using Open Source Free API to ${language}...`);
+    // Truncate to save tokens for Groq (Max ~4000 chars for MVP)
+    const safeSourceText = sourceText.length > 4000 ? sourceText.substring(0, 4000) + '...' : sourceText;
+
+    let apiResult = null;
+    const GROQ_API_KEY = process.env.GROQ_API_KEY;
+
+    if (GROQ_API_KEY) {
+      console.log(`Translating using Groq LLM API to ${language}...`);
+      try {
+        const customInstructions = userPrompt ? `\nUSER INSTRUCTIONS: ${userPrompt}\n` : '';
+        
+        const systemPrompt = `You are a highly advanced AI language tutor. 
+Your goal is to extract the main concepts from the document and translate them into ${language}.
+CRITICAL INSTRUCTION: Do NOT do a robotic, literal, exact word-for-word translation! Translate it so it sounds NATURAL, CONVERSATIONAL, and exactly like how people actually speak today in ${language}.
+${customInstructions}
+
+Document Text:
+"""
+${safeSourceText}
+"""
+
+Respond STRICTLY with valid JSON. Structure:
+{
+  "summary": "A 1-sentence TL;DR of the document in ${language}.",
+  "translatedText": "A natural, conversational 4-sentence translation/overview of the core concepts in ${language}.",
+  "breakdown": [ {"word": "KeyWord1", "pos": "Noun", "meaning": "Definition"} ],
+  "flashcards": [ {"word": "KeyWord1", "definition": "def1", "sampleSentence": "sentence", "partOfSpeech": "Noun"} ]
+}`;
+
+        const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
+          model: 'llama-3.1-8b-instant',
+          messages: [{ role: 'user', content: systemPrompt }],
+          response_format: { type: "json_object" }
+        }, {
+          headers: {
+            'Authorization': `Bearer ${GROQ_API_KEY}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        const content = response.data.choices[0].message.content;
+        apiResult = JSON.parse(content);
+        apiResult.originalText = sourceText;
+      } catch (err) {
+        console.error('Groq API Error:', err.message);
+        console.log('Falling back to Open Source Algorithmic translation...');
+        apiResult = null;
+      }
+    }
     
-    // 1. Generate a brief 1-sentence summary
-    const shortEnglishSummary = await generateAlgorithmicSummary(sourceText, 1);
-    const translatedShortSummary = await googleTranslate(shortEnglishSummary, language);
+    // Fallback if Groq fails or no key
+    if (!apiResult) {
+      console.log(`Translating using Open Source Free API to ${language}...`);
+      
+      const shortEnglishSummary = await generateAlgorithmicSummary(sourceText, 1);
+      const translatedShortSummary = await googleTranslate(shortEnglishSummary, language);
 
-    // 2. Generate a detailed 4-sentence overview of the content to translate (instead of the whole document!)
-    const detailedEnglishOverview = await generateAlgorithmicSummary(sourceText, 4);
-    const translatedDetailedOverview = await googleTranslate(detailedEnglishOverview, language);
+      const detailedEnglishOverview = await generateAlgorithmicSummary(sourceText, 4);
+      let translatedDetailedOverview = await googleTranslate(detailedEnglishOverview, language);
+      
+      if (userPrompt) {
+        translatedDetailedOverview = `[User Prompt: ${userPrompt}] ` + translatedDetailedOverview;
+      }
 
-    const apiResult = {
-      originalText: sourceText,
-      translatedText: translatedDetailedOverview, // Only translate the important details!
-      summary: translatedShortSummary,
-      breakdown: [
-        { word: "Feature", pos: "Noun", meaning: "Powered by Open Source API" },
-        { word: "Hackathon", pos: "Noun", meaning: "Ready for presentation" }
-      ],
-      flashcards: [
-        { word: "Success", definition: "Achieving the desired outcome.", sampleSentence: "The API integration was a success.", partOfSpeech: "Noun" }
-      ]
-    };
+      apiResult = {
+        originalText: sourceText,
+        translatedText: translatedDetailedOverview, 
+        summary: translatedShortSummary,
+        breakdown: [
+          { word: "Feature", pos: "Noun", meaning: "Powered by Open Source API Fallback" }
+        ],
+        flashcards: [
+          { word: "Success", definition: "Achieving the desired outcome.", sampleSentence: "The API integration was a success.", partOfSpeech: "Noun" }
+        ]
+      };
+    }
 
     // Save history
     const history = new TranslationHistory({

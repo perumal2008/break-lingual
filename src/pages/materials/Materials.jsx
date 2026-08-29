@@ -8,6 +8,7 @@ const Materials = () => {
   const [history, setHistory] = useState([]);
   const [selectedResult, setSelectedResult] = useState(null);
   const [language, setLanguage] = useState('Tamil');
+  const [prompt, setPrompt] = useState('');
 
   useEffect(() => {
     // Load history on mount
@@ -45,6 +46,7 @@ const Materials = () => {
       formData.append('file', file);
       formData.append('language', language);
       formData.append('sourceText', '');
+      formData.append('prompt', prompt);
 
       const response = await fetch('http://localhost:5000/api/translate', {
         method: 'POST',
@@ -156,6 +158,29 @@ const Materials = () => {
                     <option value="English">English</option>
                   </select>
                 </div>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', textAlign: 'left' }}>
+                  <label htmlFor="custom-prompt" style={{ fontWeight: '500', color: '#555', fontSize: '0.9rem' }}>
+                    Custom Instructions (Optional):
+                  </label>
+                  <textarea 
+                    id="custom-prompt"
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder="e.g. Summarize only the introduction, keep it formal..."
+                    style={{ 
+                      padding: '10px', 
+                      borderRadius: '6px', 
+                      border: '1px solid #ccc', 
+                      outline: 'none', 
+                      resize: 'vertical',
+                      minHeight: '60px',
+                      fontFamily: 'inherit',
+                      fontSize: '0.9rem'
+                    }}
+                  />
+                </div>
+
                 <button 
                   className="translate-btn" 
                   onClick={handleTranslate} 
