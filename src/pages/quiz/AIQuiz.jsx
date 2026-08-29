@@ -1,129 +1,217 @@
 import React, { useState } from 'react';
 
 const AIQuiz = () => {
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [score, setScore] = useState(null);
-  const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [stage, setStage] = useState('setup'); // setup | loading | quiz | result
+  const [topicInput, setTopicInput] = useState('');
+  const [questions, setQuestions] = useState([]);
+  const [currentQ, setCurrentQ] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [revealed, setRevealed] = useState(false);
+  const [score, setScore] = useState(0);
 
-  const mockQuestions = [
-    {
-      question: "Which part of speech is the word 'Innovate'?",
-      options: ["Noun", "Verb", "Adjective", "Adverb"],
-      correct: "Verb"
-    },
-    {
-      question: "What does 'Resilient' mean in the context of the translation?",
-      options: [
-        "Easily broken",
-        "Able to withstand difficult conditions",
-        "A type of software pattern",
-        "To start a new process"
-      ],
-      correct: "Able to withstand difficult conditions"
+  const generateQuiz = async (type) => {
+    setStage('loading');
+    let payload = {};
+    if (type === 'topic') payload = { topic: topicInput };
+    else {
+      const history = JSON.parse(localStorage.getItem('materialsHistory') || '[]');
+      if (!history.length) { alert("Upload a material first!"); setStage('setup'); return; }
+      payload = { sourceText: history[0].originalText || history[0].summary };
     }
-  ];
 
-  const handleSelect = (option) => {
-    setSelectedAnswer(option);
+    try {
+      const res = await fetch('/api/quiz/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setQuestions(data);
+      setCurrentQ(0);
+      setSelected(null);
+      setRevealed(false);
+      setScore(0);
+      setStage('quiz');
+    } catch (err) {
+      console.error(err);
+      setStage('setup');
+      alert('Could not generate quiz. Check backend.');
+    }
   };
 
-  const handleNext = () => {
-    let currentScore = score === null ? 0 : score;
-    if (selectedAnswer === mockQuestions[currentQuestion].correct) {
-      currentScore += 1;
-    }
-    
-    setScore(currentScore);
-    
-    if (currentQuestion + 1 < mockQuestions.length) {
-      setCurrentQuestion(currentQuestion + 1);
-      setSelectedAnswer(null);
+  const submitAnswer = () => {
+    if (!selected) return;
+    setRevealed(true);
+    if (selected === questions[currentQ].correct) setScore(s => s + 1);
+  };
+
+  const nextQuestion = () => {
+    if (currentQ + 1 < questions.length) {
+      setCurrentQ(q => q + 1);
+      setSelected(null);
+      setRevealed(false);
     } else {
-      // Finish Quiz
-      setCurrentQuestion(currentQuestion + 1);
-      
-      // Calculate final percentage
-      const finalScore = currentScore;
-      const totalQuestions = mockQuestions.length;
-      const percentage = Math.round((finalScore / totalQuestions) * 100);
-      
-      // Update global localStorage array
-      const existingScores = JSON.parse(localStorage.getItem('quizScores') || '[]');
-      existingScores.push(percentage);
-      localStorage.setItem('quizScores', JSON.stringify(existingScores));
-      
-      // Dispatch event to update Dashboard immediately
+      const pct = Math.round(((score + (selected === questions[currentQ].correct ? 1 : 0)) / questions.length) * 100);
+      const existing = JSON.parse(localStorage.getItem('quizScores') || '[]');
+      existing.push(pct);
+      localStorage.setItem('quizScores', JSON.stringify(existing));
       window.dispatchEvent(new Event('quizScoreUpdated'));
+      setStage('result');
     }
   };
 
-  const resetQuiz = () => {
-    setCurrentQuestion(0);
-    setScore(null);
-    setSelectedAnswer(null);
-  };
+  const finalScore = Math.round((score / questions.length) * 100);
 
-  const isFinished = currentQuestion >= mockQuestions.length;
-
-  return (
-    <div className="flex flex-col items-center py-10 px-4 min-h-full bg-gray-50">
-      <div className="max-w-2xl w-full bg-white rounded-xl shadow-md p-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">AI Quiz</h1>
-        <p className="text-gray-600 mb-8">Test your knowledge with AI-generated questions based on your recent materials.</p>
-        
-        {!isFinished ? (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <span className="text-sm font-semibold text-gray-500 uppercase">Question {currentQuestion + 1} of {mockQuestions.length}</span>
-            </div>
-            
-            <h2 className="text-xl text-gray-800 font-medium mb-6">{mockQuestions[currentQuestion].question}</h2>
-            
-            <div className="space-y-3">
-              {mockQuestions[currentQuestion].options.map((option, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleSelect(option)}
-                  className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                    selectedAnswer === option 
-                      ? 'border-blue-500 bg-blue-50 text-blue-700' 
-                      : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                  }`}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-            
-            <div className="mt-8 flex justify-end">
+  // ── SETUP ──
+  if (stage === 'setup') return (
+    <div className="min-h-full bg-slate-50 flex items-start justify-center p-6 pt-12 page-enter">
+      <div className="w-full max-w-lg">
+        <div className="text-center mb-8">
+          <div className="text-5xl mb-3">🎯</div>
+          <h1 className="text-3xl font-bold text-slate-800">AI Quiz</h1>
+          <p className="text-slate-500 mt-2">Generate a quiz from any topic or your uploaded materials</p>
+        </div>
+        <div className="space-y-4">
+          {/* Topic Input */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+            <h3 className="font-semibold text-slate-700 mb-3">📌 Generate from a Topic</h3>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={topicInput}
+                onChange={e => setTopicInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && topicInput.trim() && generateQuiz('topic')}
+                placeholder="e.g. Photosynthesis, World War 2, Tamil grammar..."
+                className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+              />
               <button
-                onClick={handleNext}
-                disabled={!selectedAnswer}
-                className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-sm hover:bg-blue-700 disabled:opacity-50 transition"
+                onClick={() => generateQuiz('topic')}
+                disabled={!topicInput.trim()}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-40 transition"
               >
-                {currentQuestion === mockQuestions.length - 1 ? 'Finish Quiz' : 'Next Question'}
+                Generate
               </button>
             </div>
           </div>
-        ) : (
-          <div className="text-center py-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full mb-6">
-              <span className="text-3xl">🎉</span>
-            </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Quiz Completed!</h2>
-            <p className="text-lg text-gray-600 mb-6">
-              You scored {Math.round((score / mockQuestions.length) * 100)}%
-            </p>
-            <p className="text-sm text-gray-500 mb-8">This score has been saved and your Dashboard average is updated!</p>
-            
+
+          <div className="flex items-center gap-3">
+            <div className="flex-1 border-t border-slate-200"></div>
+            <span className="text-slate-400 text-xs uppercase tracking-widest">or</span>
+            <div className="flex-1 border-t border-slate-200"></div>
+          </div>
+
+          {/* From Material */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+            <h3 className="font-semibold text-slate-700 mb-1">📚 Generate from Latest Material</h3>
+            <p className="text-slate-500 text-sm mb-4">Quiz yourself on the last document you uploaded</p>
             <button
-              onClick={resetQuiz}
-              className="px-6 py-2 bg-gray-800 text-white font-semibold rounded-lg shadow-sm hover:bg-gray-900 transition"
+              onClick={() => generateQuiz('material')}
+              className="w-full bg-purple-600 text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-purple-700 transition"
             >
-              Take Another Quiz
+              Generate from Document
             </button>
           </div>
-        )}
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── LOADING ──
+  if (stage === 'loading') return (
+    <div className="min-h-full bg-slate-50 flex flex-col items-center justify-center page-enter">
+      <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
+      <p className="text-slate-600 font-medium">Generating your quiz with AI...</p>
+    </div>
+  );
+
+  // ── QUIZ ──
+  if (stage === 'quiz' && questions.length) {
+    const q = questions[currentQ];
+    return (
+      <div className="min-h-full bg-slate-50 flex items-start justify-center p-6 pt-10 page-enter">
+        <div className="w-full max-w-2xl">
+          {/* Progress */}
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm font-medium text-slate-500">Question {currentQ + 1} of {questions.length}</span>
+            <span className="text-sm font-bold text-blue-600">Score: {score} / {currentQ}</span>
+          </div>
+          <div className="w-full bg-slate-200 rounded-full h-1.5 mb-6">
+            <div className="bg-blue-600 h-1.5 rounded-full transition-all" style={{ width: `${((currentQ) / questions.length) * 100}%` }}></div>
+          </div>
+
+          {/* Question Card */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mb-4">
+            <h2 className="text-lg font-semibold text-slate-800 mb-5">{q.question}</h2>
+            <div className="space-y-3">
+              {q.options.map((opt, i) => {
+                let cls = 'border-slate-200 bg-white text-slate-700 hover:border-blue-400 cursor-pointer';
+                if (revealed) {
+                  if (opt === q.correct) cls = 'border-green-500 bg-green-50 text-green-800';
+                  else if (opt === selected) cls = 'border-red-500 bg-red-50 text-red-800';
+                  else cls = 'border-slate-200 bg-slate-50 text-slate-400';
+                } else if (opt === selected) {
+                  cls = 'border-blue-500 bg-blue-50 text-blue-800';
+                }
+                return (
+                  <button
+                    key={i}
+                    disabled={revealed}
+                    onClick={() => setSelected(opt)}
+                    className={`w-full text-left px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${cls}`}
+                  >
+                    <span className="mr-2 opacity-60">{String.fromCharCode(65 + i)}.</span> {opt}
+                    {revealed && opt === q.correct && <span className="float-right">✅</span>}
+                    {revealed && opt === selected && opt !== q.correct && <span className="float-right">❌</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Explanation banner */}
+          {revealed && (
+            <div className={`rounded-xl px-4 py-3 text-sm font-medium mb-4 ${selected === q.correct ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+              {selected === q.correct ? '✅ Correct! Well done.' : `❌ Incorrect. The correct answer is: "${q.correct}"`}
+            </div>
+          )}
+
+          <div className="flex justify-end">
+            {!revealed ? (
+              <button onClick={submitAnswer} disabled={!selected}
+                className="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-semibold text-sm hover:bg-blue-700 disabled:opacity-40 transition">
+                Submit Answer
+              </button>
+            ) : (
+              <button onClick={nextQuestion}
+                className="bg-slate-800 text-white px-6 py-2.5 rounded-xl font-semibold text-sm hover:bg-slate-900 transition">
+                {currentQ + 1 < questions.length ? 'Next Question →' : 'Finish Quiz'}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── RESULT ──
+  return (
+    <div className="min-h-full bg-slate-50 flex items-center justify-center p-6 page-enter">
+      <div className="w-full max-w-md text-center">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-10">
+          <div className="text-6xl mb-4">{finalScore >= 70 ? '🎉' : finalScore >= 40 ? '💪' : '📖'}</div>
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">Quiz Complete!</h2>
+          <p className="text-slate-500 mb-6">You scored</p>
+          <div className={`text-6xl font-black mb-2 ${finalScore >= 70 ? 'text-green-600' : finalScore >= 40 ? 'text-yellow-600' : 'text-red-600'}`}>
+            {finalScore}%
+          </div>
+          <p className="text-slate-400 text-sm mb-8">({score} out of {questions.length} correct)</p>
+          <p className="text-xs text-slate-400 mb-6">Score saved to your Dashboard</p>
+          <button onClick={() => { setStage('setup'); setTopicInput(''); }}
+            className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition">
+            Try Another Quiz
+          </button>
+        </div>
       </div>
     </div>
   );

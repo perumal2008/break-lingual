@@ -13,7 +13,7 @@ const TranslationWorkspace = () => {
   // Fetch flashcards on load
   const loadFlashcards = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/flashcards');
+      const res = await fetch('/api/flashcards');
       const data = await res.json();
       setFlashcards(data);
     } catch (err) {
@@ -30,7 +30,7 @@ const TranslationWorkspace = () => {
     
     setIsTranslating(true);
     try {
-      const res = await fetch('http://localhost:5000/api/translate', {
+      const res = await fetch('/api/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sourceText, language })
@@ -74,7 +74,7 @@ const TranslationWorkspace = () => {
 
   const handleAddFlashcard = async (card) => {
     try {
-      await fetch('http://localhost:5000/api/flashcards', {
+      await fetch('/api/flashcards', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(card)

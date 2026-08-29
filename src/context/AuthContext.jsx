@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (provider, email, name, providerId) => {
     try {
       // Send auth data to backend API to create/update user and get JWT
-      const res = await fetch('http://localhost:5000/api/auth/social', {
+      const res = await fetch('/api/auth/social', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, name, provider, providerId })

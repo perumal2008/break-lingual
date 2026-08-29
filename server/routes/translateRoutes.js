@@ -9,5 +9,8 @@ const upload = multer({ storage: multer.memoryStorage() });
 router.post('/translate', upload.single('file'), translateController.translateText);
 router.post('/flashcards', translateController.saveFlashcard);
 router.get('/flashcards', translateController.getFlashcards);
+router.post('/quiz/generate', translateController.generateQuiz);
+router.post('/chat', translateController.chatWithTeacher);
+router.post('/video/script', translateController.generateVideoScript);
 
 module.exports = router;

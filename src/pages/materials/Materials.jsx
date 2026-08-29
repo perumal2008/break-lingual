@@ -48,7 +48,7 @@ const Materials = () => {
       formData.append('sourceText', '');
       formData.append('prompt', prompt);
 
-      const response = await fetch('http://localhost:5000/api/translate', {
+      const response = await fetch('/api/translate', {
         method: 'POST',
         body: formData
       });
@@ -63,9 +63,14 @@ const Materials = () => {
       const newTranslation = {
         id: translationId,
         originalName: file.name,
+        title: file.name.replace(/\.[^/.]+$/, ''),
         date: new Date().toLocaleDateString(),
+        language,
         summary: data.summary,
-        translatedText: data.translatedText
+        translatedText: data.translatedText,
+        originalText: data.originalText || '',
+        breakdown: data.breakdown || [],
+        flashcards: data.flashcards || [],
       };
 
       // Save file data to IndexedDB to avoid 5MB localStorage limit
