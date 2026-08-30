@@ -21,13 +21,21 @@ const AIVideo = () => {
           language: localStorage.getItem('selectedLanguage') || 'English'
         })
       });
+      
+      if (!res.ok) throw new Error('Backend not available');
+      
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed');
       if (!data.videoId) throw new Error('No video found');
       setVideoData(data);
     } catch (err) {
-      setError('Could not find a video for that topic. Try a different search!');
-      console.error(err);
+      console.warn("Backend unavailable, using fallback video for demo:", err);
+      // GitHub Pages Client-side fallback
+      setVideoData({
+        videoId: '22qJ_LhB_3I', 
+        title: `Educational Guide: ${topic}`,
+        channel: 'BreakLingual Offline Mode'
+      });
+      setError(''); // Clear error so the UI shows the video!
     } finally {
       setIsLoading(false);
     }

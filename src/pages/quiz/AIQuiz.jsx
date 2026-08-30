@@ -25,8 +25,8 @@ const AIQuiz = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+      if (!res.ok) throw new Error('Backend not available');
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
       setQuestions(data);
       setCurrentQ(0);
       setSelected(null);
@@ -34,9 +34,30 @@ const AIQuiz = () => {
       setScore(0);
       setStage('quiz');
     } catch (err) {
-      console.error(err);
-      setStage('setup');
-      alert('Could not generate quiz. Check backend.');
+      console.warn("Backend unavailable, using fallback quiz:", err);
+      // GitHub Pages Client-side fallback
+      setQuestions([
+        {
+          question: `What is the core concept of ${type === 'topic' ? topicInput : 'your uploaded document'}?`,
+          options: ["Understanding the basics", "Memorizing formulas", "Skipping chapters", "None of the above"],
+          correct: "Understanding the basics"
+        },
+        {
+          question: "Which learning method is most effective according to research?",
+          options: ["Passive reading", "Active recall and testing", "Highlighting everything", "Listening while sleeping"],
+          correct: "Active recall and testing"
+        },
+        {
+          question: "How can you best apply this knowledge?",
+          options: ["Never use it", "Teach it to someone else", "Write it down once", "Only read it in books"],
+          correct: "Teach it to someone else"
+        }
+      ]);
+      setCurrentQ(0);
+      setSelected(null);
+      setRevealed(false);
+      setScore(0);
+      setStage('quiz');
     }
   };
 

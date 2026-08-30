@@ -40,13 +40,28 @@ const AITutor = () => {
           contextText
         })
       });
+      if (!res.ok) throw new Error('Backend not available');
       const data = await res.json();
       setMessages([...updated, data]);
     } catch (err) {
-      setMessages([...updated, {
-        role: 'assistant',
-        content: "I'm having trouble connecting right now. Please check your backend and try again."
-      }]);
+      console.warn("Backend unavailable, using fallback chat:", err);
+      // GitHub Pages Client-side fallback
+      const lastMsg = input.toLowerCase();
+      let reply = `That's a great question! 🤔 I'm currently running in **offline mode** because there is no backend server connected.\n\nI can still guide you though! Here are some things you can try right now:\n- **Take an AI Quiz** on any topic you're studying\n- **Watch educational videos** on the AI Video page`;
+      
+      if (/^(hi|hello|hey|good morning|good evening|hola|namaste|vanakkam)/.test(lastMsg)) {
+        reply = "Hello there! 👋 I'm **Lingua**, your AI language teacher. I'm currently running in **offline mode**.\n\nBut I can still help! Try asking me about:\n- **Vocabulary** and word meanings\n- **Grammar** tips\n- **Your uploaded materials**";
+      } else if (/translat|how do you say|what is .* in (tamil|hindi|spanish|french|english|telugu|german)/.test(lastMsg)) {
+        reply = "Great question! 🌍 Translation is one of my specialties. Right now I'm in **offline mode**, so I can't translate in real-time.\n\n**Here's what you can do:**\n1. Go to **Smart Materials** in the sidebar\n2. Upload a document or paste text\n3. Select your target language and hit **Translate**";
+      } else if (/grammar|tense|verb|noun|adjective|conjugat|sentence structure|past tense|present tense/.test(lastMsg)) {
+        reply = "Grammar is the backbone of any language! 📚 Here are some **universal grammar tips**:\n\n- **Subject-Verb-Object (SVO)** is the most common word order\n- **Verbs** change form based on tense (past, present, future)\n- **Practice with short sentences** before tackling complex structures";
+      } else if (/vocabul|word|meaning|define|synonym|antonym/.test(lastMsg)) {
+        reply = "Building **vocabulary** is one of the best ways to improve! 💡 Here are proven strategies:\n\n- **Flashcards** — Review new words daily using spaced repetition\n- **Context reading** — Learn words inside sentences\n- **Word families** — Learn related words together";
+      } else if (/quiz|test|question|exam|practice/.test(lastMsg)) {
+        reply = "Ready to test your knowledge? 🎯\n\nHead over to the **AI Quiz** section in the sidebar. The quiz gives you **instant feedback** with correct answers highlighted in green!";
+      }
+
+      setMessages([...updated, { role: 'assistant', content: reply }]);
     } finally {
       setIsLoading(false);
     }

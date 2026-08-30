@@ -53,9 +53,19 @@ const Materials = () => {
         body: formData
       });
       
-      const data = await response.json();
+      let data;
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to translate');
+        // Fallback for GitHub Pages
+        console.warn("Backend unavailable, using fallback translation");
+        data = {
+          summary: "This is a simulated summary because the backend server is not running on GitHub Pages.",
+          translatedText: `[Mock Translation to ${language}]\n\nSince this app is hosted on GitHub Pages (which only supports frontend code), the backend AI cannot be reached.\n\nTo see real translations, please run the app locally with 'npm run dev:all'.`,
+          originalText: "Simulated original text.",
+          breakdown: [],
+          flashcards: []
+        };
+      } else {
+        data = await response.json();
       }
       
       const translationId = Date.now();
@@ -86,7 +96,7 @@ const Materials = () => {
       setFile(null); 
     } catch (error) {
       console.error("API error:", error);
-      alert("Failed to reach AI server. Please make sure the backend is running.");
+      alert("Failed to process file. Please try a smaller file or check your connection.");
     } finally {
       setIsTranslating(false);
     }
