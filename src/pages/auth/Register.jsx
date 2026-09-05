@@ -32,10 +32,10 @@ const Register = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4 page-enter">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4 shadow-lg shadow-blue-900/50">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-2xl mb-4 shadow-lg shadow-indigo-900/50">
             <span className="text-3xl">🌐</span>
           </div>
-          <h1 className="text-3xl font-bold text-white">BreakLingual</h1>
+          <h1 className="text-3xl font-bold text-white">Break<span className="text-indigo-400">Lingual</span></h1>
           <p className="text-slate-400 mt-1">Start your AI learning journey today</p>
         </div>
 
@@ -80,7 +80,7 @@ const Register = () => {
                 className="w-full bg-white/5 border border-white/10 text-white placeholder-slate-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-blue-500 transition" required />
             </div>
             <button type="submit" disabled={isLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition disabled:opacity-50 flex items-center justify-center gap-2">
+              className="w-full bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white font-semibold py-2.5 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 hover:-translate-y-0.5 active:scale-[0.98]">
               {isLoading
                 ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span> Creating account...</>
                 : 'Create Account'}

@@ -11,6 +11,7 @@ import AITutor from '../pages/tutor/AITutor';
 import AIQuiz from '../pages/quiz/AIQuiz';
 import Materials from '../pages/materials/Materials';
 import TranslationWorkspace from '../pages/TranslationWorkspace';
+import AIImage from '../pages/image/AIImage';
 
 const AppRoutes = () => {
   return (
@@ -32,6 +33,7 @@ const AppRoutes = () => {
             <Route path="/tutor" element={<ProtectedRoute><AITutor /></ProtectedRoute>} />
             <Route path="/quiz" element={<ProtectedRoute><AIQuiz /></ProtectedRoute>} />
             <Route path="/materials" element={<ProtectedRoute><Materials /></ProtectedRoute>} />
+            <Route path="/image" element={<ProtectedRoute><AIImage /></ProtectedRoute>} />
           </Routes>
         </main>
       </div>

@@ -12,5 +12,6 @@ router.get('/flashcards', translateController.getFlashcards);
 router.post('/quiz/generate', translateController.generateQuiz);
 router.post('/chat', translateController.chatWithTeacher);
 router.post('/video/script', translateController.generateVideoScript);
+router.post('/image/generate', translateController.generateImage);
 
 module.exports = router;
