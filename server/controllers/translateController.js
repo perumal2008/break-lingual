@@ -460,41 +460,72 @@ exports.generateVideoScript = async (req, res) => {
   }
 };
 
-// ✅ NEW: AI Image Generation via Hugging Face SDXL
+// ✅ NEW: AI Image Generation via Pollinations AI & Hugging Face SDXL/FLUX
 exports.generateImage = async (req, res) => {
   try {
-    const { prompt } = req.body;
+    const { prompt, style = 'Educational Illustration' } = req.body;
     if (!prompt) return res.status(400).json({ error: 'Missing prompt' });
 
-    const HF_API_KEY = process.env.HUGGINGFACE_API_KEY;
-    if (!HF_API_KEY) return res.status(500).json({ error: 'Hugging Face API key not configured' });
-
-    const enhancedPrompt = `Educational illustration: ${prompt}, detailed, colorful, high quality, digital art, learning material`;
+    const enhancedPrompt = `${style}: ${prompt}, high quality, detailed, vibrant colors, clear diagram, educational visual`;
     console.log('Generating image for:', enhancedPrompt);
 
-    const hfResponse = await axios.post(
-      'https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0',
-      { inputs: enhancedPrompt },
-      {
-        headers: { Authorization: `Bearer ${HF_API_KEY}`, 'Content-Type': 'application/json' },
-        responseType: 'arraybuffer',
-        timeout: 60000
-      }
-    );
+    // ✅ PRIMARY: Pollinations AI (Fast, free, reliable real AI generation - FLUX model)
+    try {
+      const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=768&height=768&seed=${Math.floor(Math.random()*100000)}&nologo=true&model=flux`;
+      console.log('✅ Image URL generated via Pollinations AI');
+      return res.json({
+        image: pollinationsUrl,
+        prompt,
+        style,
+        source: 'Pollinations AI (FLUX)'
+      });
+    } catch (pErr) {
+      console.log('Pollinations AI failed, trying Hugging Face...', pErr.message);
+    }
 
-    const base64Image = Buffer.from(hfResponse.data, 'binary').toString('base64');
-    const contentType = hfResponse.headers['content-type'] || 'image/png';
-    console.log('✅ Image generated via Hugging Face SDXL');
-    res.json({ image: `data:${contentType};base64,${base64Image}`, prompt });
+    // ✅ SECONDARY: Hugging Face (FLUX.1-schnell / SDXL)
+    const HF_API_KEY = process.env.HUGGINGFACE_API_KEY;
+    if (HF_API_KEY) {
+      try {
+        const hfResponse = await axios.post(
+          'https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell',
+          { inputs: enhancedPrompt },
+          {
+            headers: { Authorization: `Bearer ${HF_API_KEY}`, 'Content-Type': 'application/json' },
+            responseType: 'arraybuffer',
+            timeout: 30000
+          }
+        );
+        const base64Image = Buffer.from(hfResponse.data, 'binary').toString('base64');
+        const contentType = hfResponse.headers['content-type'] || 'image/png';
+        console.log('✅ Image generated via Hugging Face FLUX');
+        return res.json({
+          image: `data:${contentType};base64,${base64Image}`,
+          prompt,
+          style,
+          source: 'Hugging Face (FLUX.1)'
+        });
+      } catch (hfErr) {
+        console.log('Hugging Face image generation failed:', hfErr.message);
+      }
+    }
+
+    // ✅ FALLBACK: Dynamic SVG/Canvas Placeholder Generator
+    res.json({
+      image: `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=512&height=512&nologo=true`,
+      prompt,
+      style,
+      fallback: true
+    });
 
   } catch (error) {
     console.error('Image generation error:', error.message);
-    // Return a placeholder image URL as fallback
     res.json({
-      image: `https://placehold.co/512x512/1e1b4b/a78bfa?text=${encodeURIComponent(req.body.prompt || 'AI Image')}`,
+      image: `https://image.pollinations.ai/prompt/${encodeURIComponent(req.body.prompt || 'Educational Illustration')}?width=512&height=512&nologo=true`,
       prompt: req.body.prompt,
       fallback: true
     });
   }
 };
+
 
