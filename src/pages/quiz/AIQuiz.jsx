@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { fetchApi } from '../../utils/api';
 
 const AIQuiz = () => {
+
   const [stage, setStage] = useState('setup'); // setup | loading | quiz | result
   const [topicInput, setTopicInput] = useState('');
   const [questions, setQuestions] = useState([]);
@@ -20,7 +22,7 @@ const AIQuiz = () => {
     }
 
     try {
-      const res = await fetch('/api/quiz/generate', {
+      const res = await fetchApi('/quiz/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

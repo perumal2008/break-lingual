@@ -1,4 +1,5 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
+import { fetchApi } from '../../utils/api';
 
 const STYLES = [
   { id: 'Diagram', label: 'Educational Diagram', icon: '📐' },
@@ -34,7 +35,7 @@ const AIImage = () => {
     setImageData(null);
 
     try {
-      const res = await fetch('/api/image/generate', {
+      const res = await fetchApi('/image/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: finalPrompt, style: selectedStyle }),

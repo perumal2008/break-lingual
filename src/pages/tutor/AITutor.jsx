@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { fetchApi } from '../../utils/api';
 
 const AITutor = () => {
   const [messages, setMessages] = useState([
@@ -32,7 +33,7 @@ const AITutor = () => {
     setIsLoading(true);
 
     try {
-      const res = await fetch('/api/chat', {
+      const res = await fetchApi('/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
