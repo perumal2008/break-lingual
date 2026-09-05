@@ -46,7 +46,30 @@ const AIImage = () => {
       const data = await res.json();
       setImageData(data);
     } catch {
-      // ✅ Client-side fallback via Pollinations AI FLUX generator (works 100% on frontend / GitHub Pages)
+      // Try Wikipedia Search PageImages API client-side
+      try {
+        const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(finalPrompt)}&gsrlimit=5&prop=pageimages&pithumbsize=800&format=json&origin=*`;
+        const wikiRes = await fetch(wikiUrl);
+        const wikiData = await wikiRes.json();
+        if (wikiData?.query?.pages) {
+          const pages = Object.values(wikiData.query.pages);
+          const withImg = pages.find(p => p.thumbnail?.source);
+          if (withImg) {
+            setImageData({
+              image: withImg.thumbnail.source,
+              prompt: finalPrompt,
+              style: selectedStyle,
+              source: 'Wikipedia Educational Diagram',
+              offline: true,
+            });
+            return;
+          }
+        }
+      } catch (wErr) {
+        console.warn('Wiki search failed:', wErr);
+      }
+
+      // ✅ Pollinations AI FLUX generator fallback
       const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(selectedStyle + ': ' + finalPrompt + ', high quality, detailed educational diagram')}?width=768&height=768&seed=${Math.floor(Math.random()*100000)}&nologo=true&model=flux`;
       setImageData({
         image: imageUrl,
@@ -57,6 +80,24 @@ const AIImage = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleImageError = async () => {
+    if (!imageData?.prompt) return;
+    try {
+      const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(imageData.prompt)}&gsrlimit=5&prop=pageimages&pithumbsize=800&format=json&origin=*`;
+      const wikiRes = await fetch(wikiUrl);
+      const wikiData = await wikiRes.json();
+      if (wikiData?.query?.pages) {
+        const pages = Object.values(wikiData.query.pages);
+        const withImg = pages.find(p => p.thumbnail?.source);
+        if (withImg) {
+          setImageData(prev => ({ ...prev, image: withImg.thumbnail.source, source: 'Wikipedia Educational Diagram' }));
+        }
+      }
+    } catch (e) {
+      console.warn('Image error fallback failed', e);
     }
   };
 
@@ -194,6 +235,7 @@ const AIImage = () => {
                 <img
                   src={imageData.image}
                   alt={imageData.prompt}
+                  onError={handleImageError}
                   className="w-full h-auto max-h-[512px] object-contain transition-transform duration-300 group-hover:scale-[1.01]"
                   loading="lazy"
                 />

@@ -460,7 +460,23 @@ exports.generateVideoScript = async (req, res) => {
   }
 };
 
-// ✅ NEW: AI Image Generation via Pollinations AI & Hugging Face SDXL/FLUX
+// Helper to search Wikipedia PageImages for real educational diagrams
+async function getWikipediaDiagram(prompt) {
+  try {
+    const url = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(prompt)}&gsrlimit=5&prop=pageimages&pithumbsize=800&format=json&origin=*`;
+    const res = await axios.get(url, { timeout: 8000 });
+    if (res.data?.query?.pages) {
+      const pages = Object.values(res.data.query.pages);
+      const withImg = pages.find(p => p.thumbnail?.source);
+      if (withImg) return withImg.thumbnail.source;
+    }
+  } catch (err) {
+    console.log('Wikipedia diagram search failed:', err.message);
+  }
+  return null;
+}
+
+// ✅ AI Image Generation via Pollinations AI, Hugging Face, & Wikipedia Diagram Search
 exports.generateImage = async (req, res) => {
   try {
     const { prompt, style = 'Educational Illustration' } = req.body;
@@ -469,7 +485,7 @@ exports.generateImage = async (req, res) => {
     const enhancedPrompt = `${style}: ${prompt}, high quality, detailed, vibrant colors, clear diagram, educational visual`;
     console.log('Generating image for:', enhancedPrompt);
 
-    // ✅ PRIMARY: Pollinations AI (Fast, free, reliable real AI generation - FLUX model)
+    // ✅ 1. Pollinations AI (FLUX model)
     try {
       const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=768&height=768&seed=${Math.floor(Math.random()*100000)}&nologo=true&model=flux`;
       console.log('✅ Image URL generated via Pollinations AI');
@@ -480,10 +496,22 @@ exports.generateImage = async (req, res) => {
         source: 'Pollinations AI (FLUX)'
       });
     } catch (pErr) {
-      console.log('Pollinations AI failed, trying Hugging Face...', pErr.message);
+      console.log('Pollinations AI failed, trying Wikipedia...', pErr.message);
     }
 
-    // ✅ SECONDARY: Hugging Face (FLUX.1-schnell / SDXL)
+    // ✅ 2. Wikipedia High-Res Educational Diagram Search API
+    const wikiDiagramUrl = await getWikipediaDiagram(prompt);
+    if (wikiDiagramUrl) {
+      console.log('✅ Educational Diagram found via Wikipedia');
+      return res.json({
+        image: wikiDiagramUrl,
+        prompt,
+        style,
+        source: 'Wikipedia Educational Diagram'
+      });
+    }
+
+    // ✅ 3. Hugging Face (FLUX.1-schnell / SDXL)
     const HF_API_KEY = process.env.HUGGINGFACE_API_KEY;
     if (HF_API_KEY) {
       try {
@@ -510,11 +538,13 @@ exports.generateImage = async (req, res) => {
       }
     }
 
-    // ✅ FALLBACK: Dynamic SVG/Canvas Placeholder Generator
+    // ✅ 4. Unsplash Educational Visual Fallback
+    const unsplashUrl = `https://source.unsplash.com/800x800/?${encodeURIComponent(prompt)},diagram,education`;
     res.json({
-      image: `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=512&height=512&nologo=true`,
+      image: unsplashUrl,
       prompt,
       style,
+      source: 'Unsplash Educational Visual',
       fallback: true
     });
 
@@ -527,5 +557,6 @@ exports.generateImage = async (req, res) => {
     });
   }
 };
+
 
 
